@@ -8,47 +8,66 @@ This project was created during a period of strong demand on Paris for flats, wh
 
 It also adds a cleaning functionality to Jinka, as the script automatically detects the list of expired offers and removes them from the Jinka website by sending a POST call to the website.
 
-The application is intended to be used locally. Credentials are necessary in order to autenticate, however they never leave the computer which sends the request. For convenience purposes, a "Save credentials" option exists which saves the credentials on a local json. The credentials are not hashed, so use of this feature is at your own risk.
+The application is intended to be used locally.
 
 For the moment, the app has only been tested with the renting offer of Jinka.
 
 
 # Installation
 
-Python 3 is required for this application. The list of necessary packages is included in the requirements file.
+Python 3.9+ and [uv](https://docs.astral.sh/uv/) are required.
 
-You can install all of the necessary packages with the following command:
+Install all dependencies with:
 
-``` pip install -r requirements.txt ``` 
+```
+uv sync
+```
 
 # Use
 
-You can launch the application from the src folder by running :
+You can launch the application from the project root by running:
 
-``` python main.py ```
+```
+uv run src/main.py
+```
 
-which will open the GUI. 
+which will open the GUI.
 
-If you prefer to use the application on a command line, the app supports the following arguments:
+If you prefer to use the application on a command line, the app supports the following flags:
 
-``` -e --email ``` -> a string containing the email   
-``` -p --password ``` -> a string containing the password of the Jinka account  
-``` -l --load ``` -> 1 to load existing credentials, 0 not to load them. If 0 is specified, the email and password arguments must be filled  
-``` -s --save ```-> 1 to save the credentials specified in the email and password fields  
-``` -x --expired ``` -> 1 to clean all of the expired offers, 0 not to do it. This operation can be long to run as the script checks all of the active offers for expiration.  
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--email` | `-e` | Jinka account email |
+| `--password` | `-p` | Jinka password (**insecure**: visible in `ps aux`). Prefer `KAJIN_PASSWORD` env var |
+| `--load` | `-l` | Load saved credentials from system keyring |
+| `--save` | `-s` | Save provided credentials to system keyring |
+| `--expired` | `-x` | Remove expired offers (slower: checks all active offers) |
+| `--upload` | `-u` | Upload results to Google Sheets |
 
-Entering any argument will bypass the GUI. By default, load, save and expired are equal to 0.  
+Providing any flag bypasses the GUI. Run `uv run src/main.py --help` for the full reference.
 
-Examples :  
+Examples:
 
-- Loading existing credentials and removing expired offers :
-``` python main.py -l 1 -x 1 ```
+- Loading saved credentials and removing expired offers:
+```
+uv run src/main.py --load --expired
+```
 
-- Writing new credentials, saving them and avoiding a check for expired offers : 
+- Writing new credentials, saving them, skipping expiry check:
+```
+KAJIN_PASSWORD='mypassword' uv run src/main.py -e 'john.doe@gmail.com' --save
+```
 
-``` python main.py -e 'john.doe@gmail.com' -p '1234' -s 1 -x 0 ```  
-or  
-``` python main.py -e 'john.doe@gmail.com' -p '1234' -s 1```  
+## Credential storage
+
+When credentials are saved (GUI "Save credentials" button or `-s` flag), the email is stored in `databases/credentials.json` and the password is stored in the **system keyring** (macOS Keychain, Windows Credential Manager, or a compatible Linux keyring such as GNOME Keyring / KWallet). No password is written to disk in plaintext.
+
+## Google Sheets upload
+
+The Google Sheets upload feature requires two environment variables:
+
+- `KAJIN_SPREADSHEET_ID` — the ID of the target Google Sheet
+- `KAJIN_GSHEETS_CREDS_PATH` — path to the directory containing `secret_client.json` and `token.json` (defaults to `../../gsheets_credentials` relative to the project root)
 
 # Disclaimer
 
