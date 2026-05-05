@@ -1,13 +1,14 @@
 import json
-import argparse
 import getpass
 import os
 import warnings
 import re
+from typing import Annotated, Optional
 
 import keyring
 import keyring.errors
 import PySimpleGUI as sg
+from cyclopts import App, Parameter
 from gsheets_uploader import Uploader
 from logzero import logger, logfile
 
@@ -17,22 +18,7 @@ from openpyxl.utils.exceptions import IllegalCharacterError
 
 KEYRING_SERVICE = 'kajin'
 
-parser = argparse.ArgumentParser(description='Override the GUI if needed.')
-parser.add_argument('-e', '--email',
-                    help='The Jinka account email address')
-parser.add_argument('-p', '--password',
-                    help='Jinka password. Prefer the KAJIN_PASSWORD environment variable '
-                         'to avoid exposing credentials in process lists.')
-parser.add_argument('-l', '--load', type=int, nargs='?',
-                    help='Whether to load existing credentials: 0 or 1')
-parser.add_argument('-s', '--save', type=int, nargs='?',
-                    help='Whether to save the credentials. Requires --email.')
-parser.add_argument('-x', '--expired', nargs='?', const=1,
-                    help='Whether to remove expired offers.')
-parser.add_argument('-u', '--upload', nargs='?', const=1,
-                    help='Whether to use the gsheets-uploader package to upload to Google Sheets.')
-
-args = parser.parse_args()
+app = App(help="Kajin — Jinka apartment scraper. Omit all flags to launch the GUI.")
 
 current_dir = os.getcwd()
 path_list = current_dir.split(os.sep)
@@ -172,8 +158,17 @@ def create_main_window():
     return sg.Window('Main Application', layout, size=(500, 200))
 
 
-if __name__ == '__main__':
-    cli_mode = any([args.email, args.password, args.load, args.save, args.expired, args.upload])
+@app.default
+def cli(
+    *,
+    email: Annotated[Optional[str], Parameter(name=("--email", "-e"), help="Jinka account email")] = None,
+    password: Annotated[Optional[str], Parameter(name=("--password", "-p"), help="Jinka password. Prefer KAJIN_PASSWORD env var to avoid exposing credentials in process lists.")] = None,
+    load: Annotated[bool, Parameter(name=("--load", "-l"), help="Load existing saved credentials from system keyring")] = False,
+    save: Annotated[bool, Parameter(name=("--save", "-s"), help="Save provided credentials to system keyring")] = False,
+    expired: Annotated[bool, Parameter(name=("--expired", "-x"), help="Remove expired offers")] = False,
+    upload: Annotated[bool, Parameter(name=("--upload", "-u"), help="Upload results to Google Sheets")] = False,
+):
+    cli_mode = any([email, password, load, save, expired, upload])
 
     if not cli_mode:
         window = None
@@ -184,12 +179,12 @@ if __name__ == '__main__':
 
             if event == 'Run Application':
                 logger.info('Launching application')
-                password = values['-PASSWORD-']
-                email = values['-EMAIL-']
-                expired = values['-EXPIRED-']
-                upload = values['-UPLOAD-']
+                _password = values['-PASSWORD-']
+                _email = values['-EMAIL-']
+                _expired = values['-EXPIRED-']
+                _upload = values['-UPLOAD-']
                 window.close()
-                run_all(email, password, expired=expired, upload=upload)
+                run_all(_email, _password, expired=_expired, upload=_upload)
                 break
 
             if event == 'Save credentials':
@@ -200,24 +195,27 @@ if __name__ == '__main__':
             if event in (sg.WIN_CLOSED, 'Exit'):
                 break
     else:
-        if args.load:
-            email, password = _load_saved_credentials()
-            if not password:
+        if load:
+            _email, _password = _load_saved_credentials()
+            if not _password:
                 logger.critical('No saved credentials found. Use -e and -p (or KAJIN_PASSWORD) to provide them.')
                 quit()
         else:
-            email = args.email
-            if args.password:
+            _email = email
+            if password:
                 logger.warning(
                     'Passing passwords via -p exposes them in process lists (ps aux). '
                     'Prefer the KAJIN_PASSWORD environment variable.'
                 )
-                password = args.password
+                _password = password
             else:
-                password = os.environ.get('KAJIN_PASSWORD') or getpass.getpass('Jinka password: ')
+                _password = os.environ.get('KAJIN_PASSWORD') or getpass.getpass('Jinka password: ')
 
-        if args.save:
-            _save_credentials(email, password)
+        if save:
+            _save_credentials(_email, _password)
 
-        upload = bool(args.upload)
-        run_all(email, password, expired=args.expired, upload=upload)
+        run_all(_email, _password, expired=expired, upload=upload)
+
+
+if __name__ == '__main__':
+    app()

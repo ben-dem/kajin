@@ -13,5 +13,6 @@ dependencies = [
     "PySimpleGUI>=4.60",
     "openpyxl>=3.0",
     "keyring>=23.0",
+    "cyclopts>=2.0",
     "gsheets-uploader",
 ]

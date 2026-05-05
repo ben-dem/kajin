@@ -33,24 +33,30 @@ uv run src/main.py
 
 which will open the GUI.
 
-If you prefer to use the application on a command line, the app supports the following arguments:
+If you prefer to use the application on a command line, the app supports the following flags:
 
-``` -e --email ``` -> a string containing the email  
-``` -p --password ``` -> the Jinka account password (**insecure**: visible in process lists via `ps aux`). Prefer the `KAJIN_PASSWORD` environment variable.  
-``` -l --load ``` -> 1 to load existing credentials, 0 not to load them. If 0 is specified, the email and password arguments must be filled  
-``` -s --save ```-> 1 to save the credentials specified in the email and password fields  
-``` -x --expired ``` -> 1 to clean all of the expired offers, 0 not to do it. This operation can be long to run as the script checks all of the active offers for expiration.  
+| Flag | Short | Description |
+|------|-------|-------------|
+| `--email` | `-e` | Jinka account email |
+| `--password` | `-p` | Jinka password (**insecure**: visible in `ps aux`). Prefer `KAJIN_PASSWORD` env var |
+| `--load` | `-l` | Load saved credentials from system keyring |
+| `--save` | `-s` | Save provided credentials to system keyring |
+| `--expired` | `-x` | Remove expired offers (slower: checks all active offers) |
+| `--upload` | `-u` | Upload results to Google Sheets |
 
-Entering any argument will bypass the GUI. By default, load, save and expired are equal to 0.
+Providing any flag bypasses the GUI. Run `uv run src/main.py --help` for the full reference.
 
-Examples :
+Examples:
 
-- Loading existing credentials and removing expired offers :
-``` uv run src/main.py -l 1 -x 1 ```
+- Loading saved credentials and removing expired offers:
+```
+uv run src/main.py --load --expired
+```
 
-- Writing new credentials, saving them and avoiding a check for expired offers:
-
-``` KAJIN_PASSWORD='mypassword' uv run src/main.py -e 'john.doe@gmail.com' -s 1 ```
+- Writing new credentials, saving them, skipping expiry check:
+```
+KAJIN_PASSWORD='mypassword' uv run src/main.py -e 'john.doe@gmail.com' --save
+```
 
 ## Credential storage
 
