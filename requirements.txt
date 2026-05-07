@@ -6,3 +6,4 @@ logzero
 itertools
 pysimplegui
 openpyxl
+pydantic-ai[anthropic]
